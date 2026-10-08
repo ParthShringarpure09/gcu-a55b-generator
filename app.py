@@ -237,6 +237,30 @@ def _wgs84_to_bng(lat: float, lon: float) -> tuple[float, float]:
     return E, N
 
 
+import base64
+import secrets
+
+from fastapi import Request
+from fastapi.responses import Response
+
+
+@app.middleware("http")
+async def password_gate(request: Request, call_next):
+    password = os.environ.get("APP_PASSWORD")
+    if not password:
+        return await call_next(request)
+    header = request.headers.get("authorization", "")
+    if header.startswith("Basic "):
+        try:
+            _, _, supplied = base64.b64decode(header[6:]).decode().partition(":")
+            if secrets.compare_digest(supplied, password):
+                return await call_next(request)
+        except Exception:
+            pass
+    return Response("Login required", status_code=401,
+                    headers={"WWW-Authenticate": 'Basic realm="GCU A55B"'})
+
+
 app.mount("/static", StaticFiles(directory=str(STATIC)), name="static")
 
 
