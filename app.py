@@ -158,6 +158,38 @@ def get_pdf(name: str):
     return FileResponse(path, media_type="application/pdf", filename=name)
 
 
+@app.get("/api/preview-map")
+def preview_map(min_e: float, min_n: float, max_e: float, max_n: float):
+    """OS map image cropped to exactly the requested BNG box, for the live preview."""
+    import io
+    from fastapi.responses import Response
+    if not os.environ.get("OS_DATA_HUB_KEY"):
+        raise HTTPException(404, "No OS_DATA_HUB_KEY set on the server.")
+    if not (0 < max_e - min_e <= 20000 and 0 < max_n - min_n <= 20000):
+        raise HTTPException(400, "Requested area is too large or empty.")
+    try:
+        res = os_tiles.fetch_bbox(min_e, min_n, max_e, max_n)
+    except Exception as e:
+        raise HTTPException(502, f"OS map fetch failed: {e}")
+    img = res.image
+    w, h = img.size
+    sx = w / (res.max_e - res.min_e)
+    sy = h / (res.max_n - res.min_n)
+    box = (
+        max(0, round((min_e - res.min_e) * sx)),
+        max(0, round((res.max_n - max_n) * sy)),
+        min(w, round((max_e - res.min_e) * sx)),
+        min(h, round((res.max_n - min_n) * sy)),
+    )
+    img = img.crop(box)
+    if img.width > 1400:
+        img = img.resize((1400, max(1, round(img.height * 1400 / img.width))))
+    buf = io.BytesIO()
+    img.save(buf, "PNG")
+    return Response(buf.getvalue(), media_type="image/png",
+                    headers={"Cache-Control": "private, max-age=3600"})
+
+
 def _obtain_tile(req_bbox):
     """Try live OS fetch; fall back to bundled sample so a demo still runs."""
     min_e, min_n, max_e, max_n = req_bbox

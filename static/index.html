@@ -229,6 +229,11 @@ function bngFrame(){
   const spanE=maxE-minE, spanN=maxN-minN;
   minE-=spanE*pad/100; maxE+=spanE*pad/100;
   minN-=spanN*pad/100; maxN+=spanN*pad/100;
+  // widen to the map box's aspect ratio so the map is not stretched
+  const aspect=(MAP.r-MAP.l)/(MAP.b-MAP.t);
+  const w=maxE-minE, h=maxN-minN;
+  if(w/h < aspect){ const d=(h*aspect-w)/2; minE-=d; maxE+=d; }
+  else { const d=(w/aspect-h)/2; minN-=d; maxN+=d; }
   return {minE,maxE,minN,maxN};
 }
 
@@ -300,6 +305,32 @@ function placeLabels(labels, route){
   });
 }
 
+const mapState = {key:null, href:null, msg:'', pending:null, timer:null};
+function mapKey(f){ return [f.minE,f.minN,f.maxE,f.maxN].map(v=>v.toFixed(1)).join(','); }
+function scheduleMap(frame, key){
+  if(mapState.key===key || mapState.pending===key) return;
+  clearTimeout(mapState.timer);
+  mapState.timer = setTimeout(async ()=>{
+    mapState.pending = key;
+    try{
+      const q = new URLSearchParams({min_e:frame.minE,min_n:frame.minN,max_e:frame.maxE,max_n:frame.maxN});
+      const r = await fetch('/api/preview-map?'+q);
+      if(!r.ok){
+        let d=''; try{ d=(await r.json()).detail||''; }catch(e){}
+        mapState.href=null;
+        mapState.msg = r.status===404 ? 'Map preview needs an OS Data Hub key on the server (PDF will use the sample map).'
+                                       : 'Map unavailable: '+d;
+      } else {
+        if(mapState.href) URL.revokeObjectURL(mapState.href);
+        mapState.href = URL.createObjectURL(await r.blob());
+        mapState.msg = 'Map \u00a9 Ordnance Survey';
+      }
+    }catch(e){ mapState.href=null; mapState.msg='Map unavailable: '+e; }
+    mapState.key = key; mapState.pending = null;
+    renderPreview();
+  }, 500);
+}
+
 function renderPreview(){
   const svg = document.getElementById('preview');
   svg.innerHTML='';
@@ -311,6 +342,24 @@ function renderPreview(){
   frameRect.setAttribute('width',MAP.r-MAP.l); frameRect.setAttribute('height',MAP.b-MAP.t);
   frameRect.setAttribute('fill','#eef1ec'); frameRect.setAttribute('stroke','#c7ccc3');
   add(frameRect);
+
+  if(waypoints.length>=1){
+    const f0 = bngFrame(), k0 = mapKey(f0);
+    if(mapState.key===k0 && mapState.href){
+      const im=document.createElementNS(NS,'image');
+      im.setAttribute('href',mapState.href);
+      im.setAttribute('x',MAP.l); im.setAttribute('y',MAP.t);
+      im.setAttribute('width',MAP.r-MAP.l); im.setAttribute('height',MAP.b-MAP.t);
+      im.setAttribute('preserveAspectRatio','none');
+      add(im);
+    }
+    const note=document.createElementNS(NS,'text');
+    note.setAttribute('x',MAP.l); note.setAttribute('y',MAP.b+18);
+    note.setAttribute('font-size','10'); note.setAttribute('fill','#7b828c');
+    note.textContent = mapState.key===k0 ? mapState.msg : 'Loading map\u2026';
+    add(note);
+    scheduleMap(f0, k0);
+  }
 
   if(waypoints.length<1){
     const t=document.createElementNS(NS,'text');
