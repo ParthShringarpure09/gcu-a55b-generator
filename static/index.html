@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>GCU A55B Generator</title>
+<style>
+  :root{
+    --blue:#2f6fd6; --blue-dark:#1f4f9e;
+    --ink:#1a1d23; --sub:#6b7280; --line:#e2e5ea;
+    --card:#ffffff; --page:#f4f6f8;
+    --green-bg:#e9f7ee; --green-text:#1c7a3e;
+    --soft-bg:#eaf6ec; --soft-text:#2f7d3a;
+    --footway-bg:#eaf1fb; --footway-text:#2857a8;
+    --carr-bg:#fdeeea; --carr-text:#b3441f;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);font-family:-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;color:var(--ink)}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px 20px 60px}
+  .top{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin-bottom:16px}
+  .badge{display:inline-block;background:var(--blue);color:#fff;font-weight:700;font-size:13px;padding:4px 10px;border-radius:5px;margin-bottom:8px}
+  h1{font-size:22px;margin:4px 0 2px}
+  .lede{color:var(--sub);font-size:14px;margin:0}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+  .stat{background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:14px;text-align:center}
+  .stat b{display:block;font-size:22px;color:var(--blue-dark)}
+  .stat span{font-size:12px;color:var(--sub)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px 24px;margin-bottom:16px}
+  .step{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .num{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+  .step h2{font-size:15px;margin:0;letter-spacing:.3px}
+  label{display:block;font-size:11px;font-weight:700;color:#4b5563;letter-spacing:.4px;margin:0 0 4px;text-transform:uppercase}
+  input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:7px;font-size:14px;background:#fff;color:var(--ink)}
+  input::placeholder{color:#b0b5bd}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:10px}
+  .field{margin-bottom:14px}
+  .btn{background:var(--blue);color:#fff;border:none;border-radius:7px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer}
+  .btn:hover{background:var(--blue-dark)}
+  .btn.ghost{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn.wide{width:100%;padding:12px;font-size:15px}
+  .btn.green{background:#2f9e5b}
+  .btn.green:hover{background:#25834a}
+  .pill{display:inline-block;font-size:11px;font-weight:700;padding:3px 8px;border-radius:5px;margin-right:6px}
+  .pill.soft{background:var(--soft-bg);color:var(--soft-text)}
+  .pill.foot{background:var(--footway-bg);color:var(--footway-text)}
+  .pill.carr{background:var(--carr-bg);color:var(--carr-text)}
+  .item{border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:10px;background:#fafbfc;position:relative}
+  .item .x{position:absolute;top:10px;right:12px;background:none;border:none;color:#9aa0a8;font-size:16px;cursor:pointer}
+  table.wp{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:13px}
+  table.wp th{text-align:left;color:var(--sub);font-size:11px;text-transform:uppercase;padding:4px 6px;font-weight:700}
+  table.wp td{padding:5px 6px;border-top:1px solid var(--line)}
+  table.wp button{background:none;border:none;color:#c0392b;cursor:pointer;font-size:13px}
+  svg text{font-family:Helvetica,Arial,sans-serif}
+  .hint{font-size:12px;color:var(--sub);margin:0 0 10px}
+  .footline{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+  .total{font-size:13px;color:var(--sub)}
+  .total b{color:var(--ink);font-size:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <span class="badge">A55B</span>
+    <h1>GCU A55B Generator</h1>
+    <p class="lede">Enter job details and waypoints &middot; preview the route and annotations &middot; export for PDF generation</p>
+    <div class="stats">
+      <div class="stat"><b id="statWp">0</b><span>Waypoints</span></div>
+      <div class="stat"><b id="statRoute">0m</b><span>Route length</span></div>
+      <div class="stat"><b id="statItems">0</b><span>Works items</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step"><div class="num">1</div><h2>Find address</h2></div>
+    <p class="hint">Look up a UK address to centre the map and prefill a grid reference. You can also enter waypoints by hand below.</p>
+    <div style="display:flex;gap:10px;margin-bottom:8px">
+      <input id="addr" placeholder="11 Lochranza Drive, Helensburgh, G84 9DY" style="flex:1" onkeydown="if(event.key==='Enter')findAddress()">
+      <button class="btn" onclick="findAddress()">Find</button>
+    </div>
+    <div id="addrStatus" class="hint" style="margin:0"></div>
+  </div>
+
+  <div class="card">
+    <div class="step"><div class="num">2</div><h2>Job details</h2></div>
+    <div class="row2">
+      <div class="field"><label>Estimate (8 char)</label><input id="estimate" placeholder="WH3C2T3F" maxlength="8"></div>
+      <div class="field"><label>Exchange area</label><input id="exchange" placeholder="CUMBERNAULD (KNSC)"></div>
+    </div>
+    <div class="field"><label>Location of works</label><input id="location" placeholder="OS 40 Barbeth Way, G67 4NL"></div>
+    <div class="row2">
+      <div class="field"><label>Permit / notice ref</label><input id="permit" placeholder="KNSC_2583_1472562"></div>
+      <div class="field"><label>Date of completion</label><input id="compDate" type="date"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Contractor</label><input id="contractor" value="GCU"></div>
+      <div class="field"><label>Operative name</label><input id="operative" placeholder="Full name"></div>
+    </div>
+    <div class="row2">
+      <div class="field"><label>Outcome</label>
+        <select id="outcome"><option value="as_planned">Executed as planned</option><option value="with_changes">Executed with changes</option></select>
+      </div>
+      <div class="field"><label>Duct section no.</label><input id="ductSection" value="1"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="step"><div class="num">3</div><h2>Works items</h2></div>
+    <p class="hint"><span class="pill soft">X001+ soft/grass</span><span class="pill foot">X017+ footway</span><span class="pill carr">X033+ carriageway</span></p>
+    <div id="itemsList"></div>
+    <button class="btn ghost wide" onclick="addItem()">+ Add works item</button>
+  </div>
+
+  <div class="card">
+    <div class="step"><div class="num">4</div><h2>Waypoints</h2></div>
+    <p class="hint">Enter OS grid references (6-digit easting / northing). The route is drawn between them in the order listed.</p>
+    <div class="row3">
+      <div><label>Label</label><input id="wpLabel" placeholder="WP1"></div>
+      <div><label>Easting</label><input id="wpE" placeholder="273579" inputmode="numeric"></div>
+      <div><label>Northing</label><input id="wpN" placeholder="672631" inputmode="numeric"></div>
+      <div><button class="btn" onclick="addWaypoint()">Add</button></div>
+    </div>
+    <div class="field"><label>Description (optional)</label><input id="wpDesc" placeholder="Core drill"></div>
+    <table class="wp" id="wpTable"><thead><tr><th>Label</th><th>Description</th><th>Easting</th><th>Northing</th><th></th></tr></thead><tbody></tbody></table>
+  </div>
+
+  <div class="card">
+    <div class="step"><div class="num">5</div><h2>Preview</h2></div>
+    <p class="hint">Route and annotation placement, computed the same way the final PDF will be drawn &mdash; not a screenshot.</p>
+    <svg id="preview" viewBox="0 0 760 480" style="width:100%;background:#fafbfc;border:1px solid var(--line);border-radius:8px"></svg>
+  </div>
+
+  <div class="card">
+    <div class="footline">
+      <div class="total">Ready to generate: <b id="readyState">no</b></div>
+      <button class="btn green" id="genBtn" onclick="generatePDF()">Generate A55B PDF</button>
+    </div>
+    <div id="genStatus" class="hint" style="margin-top:10px"></div>
+    <div id="pdfResult" style="margin-top:12px"></div>
+  </div>
+
+</div>
+
+<script>
+let items = [];
+let waypoints = [];
+let itemSeq = 0;
+
+function addItem(){
+  itemSeq++;
+  items.push({id:itemSeq, code:'X017', surface:'footway', metres:0, at:0.5});
+  renderItems();
+}
+function removeItem(id){ items = items.filter(i=>i.id!==id); renderItems(); }
+function updateItem(id, field, val){
+  const it = items.find(i=>i.id===id);
+  if(!it) return;
+  it[field] = (field==='metres'||field==='at') ? parseFloat(val)||0 : val;
+  if(field==='code'){
+    const n = parseInt(val.replace(/[^0-9]/g,''),10);
+    if(n>=1&&n<=16) it.surface='soft';
+    else if(n>=17&&n<=32) it.surface='footway';
+    else if(n>=33&&n<=48) it.surface='carriageway';
+  }
+  renderStats(); renderPreview();
+}
+function renderItems(){
+  const el = document.getElementById('itemsList');
+  el.innerHTML = items.map(it => `
+    <div class="item">
+      <button class="x" onclick="removeItem(${it.id})">&times;</button>
+      <div class="row2">
+        <div><label>Code</label><input value="${it.code}" oninput="updateItem(${it.id},'code',this.value)"></div>
+        <div><label>Qty (m)</label><input type="number" step="0.1" value="${it.metres}" oninput="updateItem(${it.id},'metres',this.value)"></div>
+      </div>
+      <label>Position along route (0 = start, 1 = end)</label>
+      <input type="range" min="0" max="1" step="0.01" value="${it.at}" oninput="updateItem(${it.id},'at',this.value)">
+    </div>`).join('') || '<p class="hint">No works items yet.</p>';
+  renderStats(); renderPreview();
+}
+
+function addWaypoint(){
+  const label = document.getElementById('wpLabel').value.trim() || ('WP'+(waypoints.length+1));
+  const desc = document.getElementById('wpDesc').value.trim();
+  const e = parseFloat(document.getElementById('wpE').value);
+  const n = parseFloat(document.getElementById('wpN').value);
+  if(isNaN(e)||isNaN(n)) return;
+  waypoints.push({label, desc, e, n});
+  document.getElementById('wpLabel').value='';
+  document.getElementById('wpDesc').value='';
+  document.getElementById('wpE').value='';
+  document.getElementById('wpN').value='';
+  renderWaypoints();
+}
+function removeWaypoint(i){ waypoints.splice(i,1); renderWaypoints(); }
+function renderWaypoints(){
+  const tb = document.querySelector('#wpTable tbody');
+  tb.innerHTML = waypoints.map((w,i)=>`
+    <tr><td>${w.label}</td><td>${w.desc||'&mdash;'}</td><td>${w.e}</td><td>${w.n}</td>
+    <td><button onclick="removeWaypoint(${i})">remove</button></td></tr>`).join('');
+  renderStats(); renderPreview();
+}
+
+function routeLengthM(){
+  let d=0;
+  for(let i=0;i<waypoints.length-1;i++){
+    d += Math.hypot(waypoints[i+1].e-waypoints[i].e, waypoints[i+1].n-waypoints[i].n);
+  }
+  return d;
+}
+
+function renderStats(){
+  document.getElementById('statWp').textContent = waypoints.length;
+  document.getElementById('statRoute').textContent = routeLengthM().toFixed(1)+'m';
+  document.getElementById('statItems').textContent = items.length;
+  const ready = waypoints.length>=2 && items.length>=1 && document.getElementById('estimate').value.length===8;
+  document.getElementById('readyState').textContent = ready ? 'yes' : 'no';
+}
+
+document.getElementById('estimate').addEventListener('input', renderStats);
+
+function bngFrame(){
+  const pad = 8;
+  const es = waypoints.map(w=>w.e), ns = waypoints.map(w=>w.n);
+  let minE = Math.min(...es), maxE = Math.max(...es);
+  let minN = Math.min(...ns), maxN = Math.max(...ns);
+  if(maxE-minE < 1) { minE-=10; maxE+=10; }
+  if(maxN-minN < 1) { minN-=10; maxN+=10; }
+  const spanE=maxE-minE, spanN=maxN-minN;
+  minE-=spanE*pad/100; maxE+=spanE*pad/100;
+  minN-=spanN*pad/100; maxN+=spanN*pad/100;
+  return {minE,maxE,minN,maxN};
+}
+
+const MAP = {l:40, t:20, r:720, b:420};
+
+function toPage(e,n,frame){
+  const x = MAP.l + (e-frame.minE)/(frame.maxE-frame.minE)*(MAP.r-MAP.l);
+  const y = MAP.b - (n-frame.minN)/(frame.maxN-frame.minN)*(MAP.b-MAP.t);
+  return [x,y];
+}
+
+function pointAt(pts, t){
+  if(pts.length===1) return pts[0];
+  const segs=[]; let total=0;
+  for(let i=0;i<pts.length-1;i++){ const d=Math.hypot(pts[i+1][0]-pts[i][0],pts[i+1][1]-pts[i][1]); segs.push(d); total+=d; }
+  let target = Math.max(0,Math.min(1,t))*total, run=0;
+  for(let i=0;i<segs.length;i++){
+    if(run+segs[i]>=target || i===segs.length-1){
+      const f = segs[i] ? (target-run)/segs[i] : 0;
+      return [pts[i][0]+(pts[i+1][0]-pts[i][0])*f, pts[i][1]+(pts[i+1][1]-pts[i][1])*f];
+    }
+    run+=segs[i];
+  }
+  return pts[pts.length-1];
+}
+
+function measureText(s, size){ return s.length * size * 0.56; }
+
+function overlap(a,b,pad){
+  return !(a.x+a.w+pad<b.x || b.x+b.w+pad<a.x || a.y+a.h+pad<b.y || b.y+b.h+pad<a.y);
+}
+function crossesRoute(lab, pts){
+  for(let i=0;i<pts.length-1;i++){
+    for(let s=0;s<=20;s++){
+      const f=s/20;
+      const px=pts[i][0]+(pts[i+1][0]-pts[i][0])*f, py=pts[i][1]+(pts[i+1][1]-pts[i][1])*f;
+      if(px>=lab.x-3 && px<=lab.x+lab.w+3 && py>=lab.y-3 && py<=lab.y+lab.h+3) return true;
+    }
+  }
+  return false;
+}
+function placeLabels(labels, route){
+  const fontSize=10, padX=5, padY=4;
+  labels.forEach(l=>{
+    l.w = Math.max(...l.lines.map(t=>measureText(t,fontSize))) + 2*padX;
+    l.h = l.lines.length*(fontSize+3) + 2*padY;
+  });
+  const order = labels.map((_,i)=>i).sort((a,b)=>labels[b].h-labels[a].h);
+  const placed=[];
+  order.forEach(idx=>{
+    const lab=labels[idx];
+    const [ax,ay]=lab.anchor;
+    let best=null;
+    for(const radius of [40,55,70,90,115,145]){
+      for(let step=0;step<24;step++){
+        const ang = step*15*Math.PI/180;
+        const cx=ax+radius*Math.cos(ang), cy=ay+radius*Math.sin(ang);
+        lab.x=cx-lab.w/2; lab.y=cy-lab.h/2;
+        if(lab.x<MAP.l+2||lab.x+lab.w>MAP.r-2) continue;
+        if(lab.y<MAP.t+2||lab.y+lab.h>MAP.b-2) continue;
+        if(crossesRoute(lab,route)) continue;
+        if(placed.some(p=>overlap(lab,p))) continue;
+        best={x:lab.x,y:lab.y}; break;
+      }
+      if(best) break;
+    }
+    if(best){ lab.x=best.x; lab.y=best.y; } else { lab.x=ax+20; lab.y=ay+20; }
+    placed.push(lab);
+  });
+}
+
+function renderPreview(){
+  const svg = document.getElementById('preview');
+  svg.innerHTML='';
+  const add=(el)=>svg.appendChild(el);
+  const NS='http://www.w3.org/2000/svg';
+
+  const frameRect=document.createElementNS(NS,'rect');
+  frameRect.setAttribute('x',MAP.l); frameRect.setAttribute('y',MAP.t);
+  frameRect.setAttribute('width',MAP.r-MAP.l); frameRect.setAttribute('height',MAP.b-MAP.t);
+  frameRect.setAttribute('fill','#eef1ec'); frameRect.setAttribute('stroke','#c7ccc3');
+  add(frameRect);
+
+  if(waypoints.length<1){
+    const t=document.createElementNS(NS,'text');
+    t.setAttribute('x',380); t.setAttribute('y',220); t.setAttribute('text-anchor','middle');
+    t.setAttribute('fill','#9aa0a8'); t.setAttribute('font-size','13');
+    t.textContent='Add waypoints to preview the route';
+    add(t); renderStats(); return;
+  }
+
+  const frame = bngFrame();
+  const pts = waypoints.map(w=>toPage(w.e,w.n,frame));
+
+  if(pts.length>1){
+    const poly=document.createElementNS(NS,'polyline');
+    poly.setAttribute('points', pts.map(p=>p.join(',')).join(' '));
+    poly.setAttribute('fill','none'); poly.setAttribute('stroke','#d8362e');
+    poly.setAttribute('stroke-width','3'); poly.setAttribute('stroke-linecap','round');
+    add(poly);
+  }
+  pts.forEach((p,i)=>{
+    const sq=document.createElementNS(NS,'rect');
+    sq.setAttribute('x',p[0]-4); sq.setAttribute('y',p[1]-4);
+    sq.setAttribute('width',8); sq.setAttribute('height',8);
+    sq.setAttribute('fill','#6a3fa0'); sq.setAttribute('stroke','#1a1d23'); sq.setAttribute('stroke-width','0.7');
+    add(sq);
+    const lbl=document.createElementNS(NS,'text');
+    lbl.setAttribute('x',p[0]+9); lbl.setAttribute('y',p[1]-4);
+    lbl.setAttribute('font-size','11'); lbl.setAttribute('font-weight','700'); lbl.setAttribute('fill','#1a1d23');
+    lbl.textContent=waypoints[i].label;
+    add(lbl);
+  });
+
+  const labels=[];
+  waypoints.forEach(w=>{
+    const lines=[w.label+(w.desc?' \u2013 '+w.desc:''), '('+w.e+','+w.n+')'];
+    labels.push({lines, anchor: toPage(w.e,w.n,frame)});
+  });
+  items.forEach(it=>{
+    labels.push({lines:[it.code+' x '+(it.metres||0)+'m'], anchor: pointAt(pts, it.at)});
+  });
+  placeLabels(labels, pts);
+
+  labels.forEach(lab=>{
+    const [ax,ay]=lab.anchor;
+    const cx=lab.x+lab.w/2, cy=lab.y+lab.h/2;
+    let dx=ax-cx, dy=ay-cy;
+    const scale = Math.min(dx? (lab.w/2)/Math.abs(dx):1e9, dy? (lab.h/2)/Math.abs(dy):1e9);
+    const sx=cx+dx*scale, sy=cy+dy*scale;
+    const line=document.createElementNS(NS,'line');
+    line.setAttribute('x1',sx); line.setAttribute('y1',sy);
+    line.setAttribute('x2',ax); line.setAttribute('y2',ay);
+    line.setAttribute('stroke','#1a1d23'); line.setAttribute('stroke-width','0.8');
+    add(line);
+
+    const rect=document.createElementNS(NS,'rect');
+    rect.setAttribute('x',lab.x); rect.setAttribute('y',lab.y);
+    rect.setAttribute('width',lab.w); rect.setAttribute('height',lab.h);
+    rect.setAttribute('fill','#ffffff'); rect.setAttribute('stroke','#1a1d23'); rect.setAttribute('stroke-width','0.8');
+    add(rect);
+
+    lab.lines.forEach((line_,i)=>{
+      const t=document.createElementNS(NS,'text');
+      t.setAttribute('x',lab.x+5); t.setAttribute('y',lab.y+13+i*12);
+      t.setAttribute('font-size','10'); t.setAttribute('fill','#1a1d23');
+      t.textContent=line_;
+      add(t);
+    });
+  });
+
+  renderStats();
+}
+
+function buildJob(){
+  return {
+    estimate: document.getElementById('estimate').value,
+    exchange_area: document.getElementById('exchange').value,
+    location: document.getElementById('location').value,
+    duct_section: document.getElementById('ductSection').value,
+    permit_ref: document.getElementById('permit').value,
+    completion_date: document.getElementById('compDate').value,
+    contractor: document.getElementById('contractor').value,
+    operative: document.getElementById('operative').value,
+    outcome: document.getElementById('outcome').value,
+    waypoints: waypoints.map(w=>({label:w.label, description:w.desc, easting:w.e, northing:w.n})),
+    items: items.map(it=>({code:it.code, surface:it.surface, metres:it.metres, at:it.at}))
+  };
+}
+
+async function findAddress(){
+  const q = document.getElementById('addr').value.trim();
+  if(!q) return;
+  const el = document.getElementById('addrStatus');
+  el.textContent = 'Searching…';
+  try{
+    const r = await fetch('/api/geocode?q='+encodeURIComponent(q));
+    if(!r.ok){ el.textContent = (await r.json()).detail || 'Not found'; return; }
+    const d = await r.json();
+    if(!document.getElementById('location').value) document.getElementById('location').value = q;
+    document.getElementById('wpE').value = d.easting;
+    document.getElementById('wpN').value = d.northing;
+    el.innerHTML = '✓ Found: '+d.display_name.slice(0,70)+' &mdash; grid ref prefilled below (easting '+d.easting+', northing '+d.northing+')';
+  }catch(e){ el.textContent = 'Search failed — enter grid references manually.'; }
+}
+
+async function generatePDF(){
+  const status = document.getElementById('genStatus');
+  const result = document.getElementById('pdfResult');
+  const btn = document.getElementById('genBtn');
+  result.innerHTML = '';
+  if(waypoints.length < 1){ status.textContent = 'Add at least one waypoint first.'; return; }
+  btn.disabled = true; status.textContent = 'Generating…';
+  try{
+    const r = await fetch('/api/generate', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(buildJob())
+    });
+    const d = await r.json();
+    if(r.status === 422){
+      status.innerHTML = '<b style="color:#b3441f">Blocked — fix these before generating:</b>';
+      result.innerHTML = '<ul>'+d.errors.map(e=>'<li>'+e+'</li>').join('')+'</ul>';
+      return;
+    }
+    if(!r.ok){ status.textContent = 'Error: '+(d.detail||'generation failed'); return; }
+    const src = d.map_source === 'os_live' ? 'live OS map' : 'sample map (no OS key set)';
+    status.innerHTML = '✓ Generated using '+src+'. Route length '+d.route_length_m+' m.';
+    let warn = '';
+    if(d.warnings && d.warnings.length){
+      warn = '<div style="margin-top:8px;color:#7a5800"><b>Warnings:</b><ul>'+d.warnings.map(w=>'<li>'+w+'</li>').join('')+'</ul></div>';
+    }
+    result.innerHTML = '<a class="btn green" href="'+d.pdf_url+'" target="_blank">Open A55B PDF</a>'+warn;
+  }catch(e){
+    status.textContent = 'Request failed: '+e.message;
+  }finally{
+    btn.disabled = false;
+  }
+}
+
+addItem();
+renderWaypoints();
+</script>
+</body>
+</html>
